@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 
 import NumberText from '../components/NumberText';
@@ -13,7 +12,7 @@ const RenderItem = ({item}) => (
     <Text
       style={styles.grid_row_title}>{`Game ${item['game-number']} (NSW)`}</Text>
     <View style={styles.filteredNumbers}>
-      {item.draw.map((item, idx, arr) => (
+      {item.draw.sort((a, b) => a - b).map((item, idx, arr) => (
         <NumberText
           key={idx}
           value={item}
@@ -22,8 +21,6 @@ const RenderItem = ({item}) => (
     </View>
   </View>
 );
-
-const {width} = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   grid_row: {

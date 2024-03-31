@@ -7,6 +7,7 @@ const AnimatedInput = ({
   onChangeText,
   placeholder,
   keyboardType,
+  onSubmitEditing,
   error,
 }) => {
   const labelAnim = useRef(new Animated.Value(0)).current;
@@ -44,6 +45,8 @@ const AnimatedInput = ({
         onBlur={handleBlur}
         placeholder={placeholder}
         keyboardType={keyboardType}
+        onSubmitEditing={onSubmitEditing}
+        returnKeyType="done" 
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}

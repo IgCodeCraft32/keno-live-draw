@@ -40,7 +40,7 @@ const useFetchData = () => {
         lastResult?.current?.draw?.length === 20 && time2NextDraw > 5000;
 
       let timeoutDuration = succedTofetchCurrentData
-        ? time2NextDraw - 5000
+        ? time2NextDraw - 3000
         : 1000;
 
       if (succedTofetchCurrentData) {
@@ -48,7 +48,7 @@ const useFetchData = () => {
         const localTime = new Date();
         const nswOffset =
           -(
-            11 + (localTime.getMonth() > 3 && localTime.getMonth() < 9 ? 1 : 0)
+            2+ (localTime.getMonth() > 3 && localTime.getMonth() < 9 ? 1 : 0)
           ) * 60;
         const nswTimeMs =
           localTime.getTime() -
@@ -57,7 +57,7 @@ const useFetchData = () => {
         const year = String(nswDate.getFullYear());
         const month = String(nswDate.getMonth() + 1).padStart(2, '0');
         const day = String(nswDate.getDate()).padStart(2, '0');
-
+        
         if (datas.length < number_of_games) {
           const fetchHistoryUrl = `https://api-info-nsw.keno.com.au/v2/info/history?jurisdiction=NSW&starting_game_number=${
             currentNumber - number_of_games + 1
@@ -67,7 +67,7 @@ const useFetchData = () => {
           if (!history_response.ok) {
             throw new Error(`HTTP error! status: ${history_response.status}`);
           }
-
+      // console.log(fetchHistoryUrl)
           const json2 = await history_response.json();
 
           if (json2.items?.length === number_of_games) {
@@ -76,6 +76,7 @@ const useFetchData = () => {
                 (a, b) => b['game-number'] - a['game-number'],
               ),
             );
+            // console.log(json2.items.length)
             setDisableError(false);
             setError(null);
           } else {

@@ -12,6 +12,7 @@ import HomeScreen from './src/screens/MenuScreen';
 import Header from "./src/components/Header";
 
 function App() {
+
   return (
     <SafeAreaView style={{flex:1}}>
       <StatusBar

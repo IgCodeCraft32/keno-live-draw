@@ -1,5 +1,5 @@
-import React, {useCallback, useState} from 'react';
-import {View, Text, StyleSheet, Dimensions} from 'react-native';
+import React, { useEffect, useState} from 'react';
+import {View, Text, StyleSheet, Switch, Dimensions} from 'react-native';
 
 import useFetchData from '../hooks/useFetchData';
 import NumberText from '../components/NumberText';
@@ -7,6 +7,10 @@ import RenderItem from '../components/RenderItem';
 import RippleButton from '../animation/RippleButton';
 import AnimatedInput from '../animation/AnimatedInput';
 import Loader from '../components/Loader';
+
+import PushNotificationIOS from '@react-native-community/push-notification-ios';
+
+const notificationId = 'keno-live-draw-alert'
 
 function MenuScreen() {
   const number_of_games = 50;
@@ -30,20 +34,84 @@ function MenuScreen() {
   };
 
   const {datas, error: fetchingError, fetchData, cancelModal} = useFetchData();
+    
+  const [lastNotification, setLastNotification] = useState(null)
+  const scheduleNotification =
+    (title, subtitle, body) => {
+      if (
+        body === lastNotification?.body &&
+        subtitle === lastNotification?.subtitle 
+      )
+        return;
+      const newNotification = {
+        id: notificationId,
+        title,
+        subtitle,
+        body,
+        isSilent: true,
+      };
+      setLastNotification(newNotification);
 
-  const filterDrawArray = useCallback(() => {
+      PushNotificationIOS.requestPermissions();
+      PushNotificationIOS.getDeliveredNotifications
+      PushNotificationIOS.addNotificationRequest(newNotification);
+    }
+
+
+  const [filterDrawArray, setFilterDrawArray] =  useState([])
+  useEffect(()=>{
     const flatedDrawArray = datas
-      .map(item => item?.draw)
-      .slice(-limit)
+      .map((item) => item?.draw)
+      .slice(0, limit - 1)
       .flat();
+
     const uniqueElements = new Set(flatedDrawArray);
-    return Array.from({length: 80}, (_, idx) => idx + 1).filter(
-      element => !uniqueElements.has(element),
+    const result = Array.from({ length: 80 }, (_, idx) => idx + 1).filter(
+      (element) => !uniqueElements.has(element)
     );
-  }, [limit, datas])();
+    if(notificationEnable && datas.length >= limit && result.length > 0){
+      scheduleNotification(
+        "KenoLiveDraw",
+        `Available ${result.length} balls in ${datas[0]?.["game-number"]}~${
+          datas[limit - 1]?.["game-number"]
+        }`,
+        `${JSON.stringify(result)}`
+      );
+    }
+    setFilterDrawArray(result);
+  }, [limit, datas, notificationEnable, lastNotification]);
+
+  const [notificationEnable, setNotificationEnable] = useState(true);
+
+  const toggleSwitch = () => {
+    if(notificationEnable) removeNitifications();
+    setNotificationEnable((previousState) => !previousState);
+  };
+  
+  const removeNitifications = ()=>{
+    PushNotificationIOS.removePendingNotificationRequests([notificationId]);
+    PushNotificationIOS.removeDeliveredNotifications([notificationId]);
+  }
+
+  useEffect(()=>{
+    if(!notificationEnable) removeNitifications();
+    return ()=>{
+      if(!notificationEnable) removeNitifications();
+    }
+  }, [])
 
   return (
     <View style={styles.container}>
+      <View style={styles.notification_form}>
+        <Text style={styles.notification_text}>Notification: </Text>
+        <Switch
+          trackColor={{ false: '#767577', true: '#006bb5' }}
+          thumbColor={notificationEnable ? '#f4f3f4' : '#f4f3f4'}
+          ios_backgroundColor="#3e3e3e"
+          onValueChange={toggleSwitch}
+          value={notificationEnable}
+        />
+      </View>
       <View style={styles.form}>
         <AnimatedInput
           style={styles.textInput}
@@ -51,6 +119,7 @@ function MenuScreen() {
           value={inputValue}
           placeholder=""
           keyboardType="numeric"
+          onSubmitEditing={handleFilter}
           error={inputError}
           setError
         />
@@ -63,7 +132,6 @@ function MenuScreen() {
       </View>
       <View style={styles.filteredNumbers}>
         <Text style={styles.filterLabel}>Result: </Text>
-
         {filterDrawArray.length > 0 ? (
           filterDrawArray.map((item, idx, arr) => (
             <NumberText
@@ -124,6 +192,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fffff7',
     display: 'flex',
     width: width,
+  },
+  notification_form: {
+    marginTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginHorizontal: 12,
+  },
+  notification_text: {
+    fontSize: 16,
+    padding: 4,
+    fontWeight: 'bold',
+    color: '#107FBE',
   },
   form: {
     marginTop: 12,
