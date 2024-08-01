@@ -1,22 +1,34 @@
-import React, { useEffect, useState} from 'react';
-import {View, Text, StyleSheet, Switch, Dimensions} from 'react-native';
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, Switch, Dimensions } from "react-native";
 
-import useFetchData from '../hooks/useFetchData';
-import NumberText from '../components/NumberText';
-import RenderItem from '../components/RenderItem';
-import RippleButton from '../animation/RippleButton';
-import AnimatedInput from '../animation/AnimatedInput';
-import Loader from '../components/Loader';
+import useFetchData from "../hooks/useFetchData";
+import NumberText from "../components/NumberText";
+import RenderItem from "../components/RenderItem";
+import RippleButton from "../animation/RippleButton";
+import AnimatedInput from "../animation/AnimatedInput";
+import Loader from "../components/Loader";
+import SingleSelect from "../components/SingleSelect";
+import RateModal from "../components/RateModal";
 
-import PushNotificationIOS from '@react-native-community/push-notification-ios';
+import PushNotificationIOS from "@react-native-community/push-notification-ios";
 
-const notificationId = 'keno-live-draw-alert'
+const notificationId = "keno-live-draw-alert";
+const options = [
+  { label: "NSW", value: "NSW" },
+  { label: "VIC", value: "VIC" },
+  { label: "QLD", value: "QLD" },
+  { label: "ACT", value: "ACT" },
+  { label: "TAS", value: "TAS" },
+  { label: "SA", value: "SA" },
+  { label: "NT", value: "NT" },
+];
 
 function MenuScreen() {
   const number_of_games = 50;
   const [limit, setLimit] = useState(20);
-  const [inputValue, setInputValue] = useState('20');
-  const [inputError, setInputError] = useState('');
+  const [inputValue, setInputValue] = useState("20");
+  const [inputError, setInputError] = useState("");
+  const [jurisdiction, setJurisdiction] = useState("NSW");
 
   const handleFilter = () => {
     const numberValue = parseFloat(inputValue);
@@ -29,37 +41,44 @@ function MenuScreen() {
       setInputError(`Enter a valid number (0 - ${number_of_games})`);
     } else {
       setLimit(numberValue);
-      setInputError('');
+      setInputError("");
     }
   };
 
-  const {datas, error: fetchingError, fetchData, cancelModal} = useFetchData();
-    
-  const [lastNotification, setLastNotification] = useState(null)
-  const scheduleNotification =
-    (title, subtitle, body) => {
-      if (
-        body === lastNotification?.body &&
-        subtitle === lastNotification?.subtitle 
-      )
-        return;
-      const newNotification = {
-        id: notificationId,
-        title,
-        subtitle,
-        body,
-        isSilent: true,
-      };
-      setLastNotification(newNotification);
+  const {
+    datas,
+    error: fetchingError,
+    fetchData,
+    cancelModal,
+  } = useFetchData(jurisdiction);
 
-      PushNotificationIOS.requestPermissions();
-      PushNotificationIOS.getDeliveredNotifications
-      PushNotificationIOS.addNotificationRequest(newNotification);
-    }
+  const handleSingleSelect = (item) => {
+    setJurisdiction(item.value);
+  };
 
+  const [lastNotification, setLastNotification] = useState(null);
+  const scheduleNotification = (title, subtitle, body) => {
+    if (
+      body === lastNotification?.body &&
+      subtitle === lastNotification?.subtitle
+    )
+      return;
+    const newNotification = {
+      id: notificationId,
+      title,
+      subtitle,
+      body,
+      isSilent: true,
+    };
+    setLastNotification(newNotification);
 
-  const [filterDrawArray, setFilterDrawArray] =  useState([])
-  useEffect(()=>{
+    PushNotificationIOS.requestPermissions();
+    PushNotificationIOS.getDeliveredNotifications;
+    PushNotificationIOS.addNotificationRequest(newNotification);
+  };
+
+  const [filterDrawArray, setFilterDrawArray] = useState([]);
+  useEffect(() => {
     const flatedDrawArray = datas
       .map((item) => item?.draw)
       .slice(0, limit - 1)
@@ -69,7 +88,7 @@ function MenuScreen() {
     const result = Array.from({ length: 80 }, (_, idx) => idx + 1).filter(
       (element) => !uniqueElements.has(element)
     );
-    if(notificationEnable && datas.length >= limit && result.length > 0){
+    if (notificationEnable && datas.length >= limit && result.length > 0) {
       scheduleNotification(
         "KenoLiveDraw",
         `Available ${result.length} balls in ${datas[0]?.["game-number"]}~${
@@ -84,32 +103,41 @@ function MenuScreen() {
   const [notificationEnable, setNotificationEnable] = useState(true);
 
   const toggleSwitch = () => {
-    if(notificationEnable) removeNitifications();
+    if (notificationEnable) removeNitifications();
     setNotificationEnable((previousState) => !previousState);
   };
-  
-  const removeNitifications = ()=>{
+
+  const removeNitifications = () => {
     PushNotificationIOS.removePendingNotificationRequests([notificationId]);
     PushNotificationIOS.removeDeliveredNotifications([notificationId]);
-  }
+  };
 
-  useEffect(()=>{
-    if(!notificationEnable) removeNitifications();
-    return ()=>{
-      if(!notificationEnable) removeNitifications();
-    }
-  }, [])
+  useEffect(() => {
+    if (!notificationEnable) removeNitifications();
+    return () => {
+      if (!notificationEnable) removeNitifications();
+    };
+  }, []);
 
   return (
     <View style={styles.container}>
       <View style={styles.notification_form}>
         <Text style={styles.notification_text}>Notification: </Text>
         <Switch
-          trackColor={{ false: '#767577', true: '#006bb5' }}
-          thumbColor={notificationEnable ? '#f4f3f4' : '#f4f3f4'}
+          trackColor={{ false: "#767577", true: "#006bb5" }}
+          thumbColor={notificationEnable ? "#f4f3f4" : "#f4f3f4"}
           ios_backgroundColor="#3e3e3e"
           onValueChange={toggleSwitch}
           value={notificationEnable}
+        />
+      </View>
+
+      <View style={styles.form}>
+        <RateModal data={datas} count={inputValue} />
+        <SingleSelect
+          data={options}
+          onSelect={handleSingleSelect}
+          placeholder={jurisdiction}
         />
       </View>
       <View style={styles.form}>
@@ -145,14 +173,18 @@ function MenuScreen() {
         )}
       </View>
 
-      <View style={[styles.flatList, {marginBottom: 12}]}>
+      <View style={[styles.flatList, { marginBottom: 12 }]}>
         <Text style={styles.faltListTitle}>
-          Live Draw Datas: {datas[0] && datas[0]['game-number']}~
-          {datas.at(-1) && datas.at(-1)['game-number']}
+          Live Draw Datas: {datas.at(-1) && datas.at(-1)["game-number"]}~
+          {datas[0] && datas[0]["game-number"]}
         </Text>
         {datas.length > 0 ? (
           datas.map((item, index) => (
-            <RenderItem key={'row-' + index} item={item} />
+            <RenderItem
+              key={"row-" + index}
+              item={item}
+              jurisdiction={jurisdiction}
+            />
           ))
         ) : (
           <Loader />
@@ -167,14 +199,14 @@ function MenuScreen() {
                 title="Cancel"
                 style={styles.refreshButton}
                 onPress={fetchData}
-                color={'dark-red'}
+                color={"dark-red"}
                 colorfulBackground={false}
               />
               <RippleButton
                 title="Refresh"
                 style={styles.refreshButton}
                 onPress={cancelModal}
-                color={'dark-red'}
+                color={"dark-red"}
               />
             </View>
           </View>
@@ -184,33 +216,33 @@ function MenuScreen() {
   );
 }
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 const fontSize = width * 0.04;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fffff7',
-    display: 'flex',
+    backgroundColor: "#fffff7",
+    display: "flex",
     width: width,
   },
   notification_form: {
     marginTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
     marginHorizontal: 12,
   },
   notification_text: {
     fontSize: 16,
     padding: 4,
-    fontWeight: 'bold',
-    color: '#107FBE',
+    fontWeight: "bold",
+    color: "#107FBE",
   },
   form: {
     marginTop: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginHorizontal: 12,
   },
   textInput: {
@@ -223,77 +255,77 @@ const styles = StyleSheet.create({
     width: 120,
   },
   filteredNumbers: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 4,
     marginTop: 12,
     marginHorizontal: 6,
     borderWidth: 2,
-    borderStyle: 'solid',
-    borderColor: '#9CB1B6',
+    borderStyle: "solid",
+    borderColor: "#9CB1B6",
     borderRadius: fontSize,
-    backgroundColor: '#EEFBF8',
+    backgroundColor: "#EEFBF8",
   },
   filterLabel: {
     fontSize: 16,
-    width: '100%',
+    width: "100%",
     padding: 4,
-    fontWeight: 'bold',
-    color: '#107FBE',
+    fontWeight: "bold",
+    color: "#107FBE",
   },
   nodataText: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 12,
     fontSize: 24,
-    textAlign: 'center',
-    color: '#9CB1B6',
+    textAlign: "center",
+    color: "#9CB1B6",
   },
   flatList: {
     marginVertical: 12,
   },
   faltListTitle: {
     width: width,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 36,
     marginBottom: 8,
     fontSize: 24,
-    color: '#006bb5',
+    color: "#006bb5",
   },
   coverScreen: {
-    position: 'absolute',
+    position: "absolute",
     width: width * 0.9,
     height: 120,
     top: 12,
     left: (width - 350) / 2,
-    backgroundColor: '#f0c4c0',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f0c4c0",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: '#c5202b',
+    borderStyle: "solid",
+    borderColor: "#c5202b",
   },
   errorAlert: {
     fontSize: 24,
-    color: '#c5202b',
-    justifyContent: 'center',
-    alignItems: 'center',
+    color: "#c5202b",
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorText: {
-    width: '100%',
-    textAlign: 'center',
-    color: '#c5202b',
+    width: "100%",
+    textAlign: "center",
+    color: "#c5202b",
     fontSize: 14,
     lineHeight: 20,
   },
   buttons: {
     marginTop: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   refreshButton: {
     minHeight: 40,
