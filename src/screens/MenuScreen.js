@@ -9,26 +9,22 @@ import AnimatedInput from "../animation/AnimatedInput";
 import Loader from "../components/Loader";
 import SingleSelect from "../components/SingleSelect";
 import RateModal from "../components/RateModal";
+import { timezoneOptions } from "../global";
 
-import PushNotificationIOS from "@react-native-community/push-notification-ios";
-
-const notificationId = "keno-live-draw-alert";
-const options = [
-  { label: "NSW", value: "NSW" },
-  { label: "VIC", value: "VIC" },
-  { label: "QLD", value: "QLD" },
-  { label: "ACT", value: "ACT" },
-  { label: "TAS", value: "TAS" },
-  { label: "SA", value: "SA" },
-  { label: "NT", value: "NT" },
-];
-
-function MenuScreen() {
+function MenuScreen({
+  lastNotification,
+  scheduleNotification,
+  removeNitifications,
+  jurisdiction,
+  setJurisdiction,
+  limit,
+  setLimit,
+  notificationEnable,
+  setNotificationEnable,
+}) {
   const number_of_games = 50;
-  const [limit, setLimit] = useState(20);
   const [inputValue, setInputValue] = useState("20");
   const [inputError, setInputError] = useState("");
-  const [jurisdiction, setJurisdiction] = useState("NSW");
 
   const handleFilter = () => {
     const numberValue = parseFloat(inputValue);
@@ -56,27 +52,6 @@ function MenuScreen() {
     setJurisdiction(item.value);
   };
 
-  const [lastNotification, setLastNotification] = useState(null);
-  const scheduleNotification = (title, subtitle, body) => {
-    if (
-      body === lastNotification?.body &&
-      subtitle === lastNotification?.subtitle
-    )
-      return;
-    const newNotification = {
-      id: notificationId,
-      title,
-      subtitle,
-      body,
-      isSilent: true,
-    };
-    setLastNotification(newNotification);
-
-    PushNotificationIOS.requestPermissions();
-    PushNotificationIOS.getDeliveredNotifications;
-    PushNotificationIOS.addNotificationRequest(newNotification);
-  };
-
   const [filterDrawArray, setFilterDrawArray] = useState([]);
   useEffect(() => {
     const flatedDrawArray = datas
@@ -100,16 +75,9 @@ function MenuScreen() {
     setFilterDrawArray(result);
   }, [limit, datas, notificationEnable, lastNotification]);
 
-  const [notificationEnable, setNotificationEnable] = useState(true);
-
   const toggleSwitch = () => {
     if (notificationEnable) removeNitifications();
-    setNotificationEnable((previousState) => !previousState);
-  };
-
-  const removeNitifications = () => {
-    PushNotificationIOS.removePendingNotificationRequests([notificationId]);
-    PushNotificationIOS.removeDeliveredNotifications([notificationId]);
+    setNotificationEnable((prev) => !prev);
   };
 
   useEffect(() => {
@@ -135,7 +103,7 @@ function MenuScreen() {
       <View style={styles.form}>
         <RateModal data={datas} count={inputValue} />
         <SingleSelect
-          data={options}
+          data={timezoneOptions}
           onSelect={handleSingleSelect}
           placeholder={jurisdiction}
         />

@@ -1,23 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-
-const KDS_URLS = {
-  NSW: "https://api-info-nsw.keno.com.au/v2/games/kds?jurisdiction=NSW",
-  VIC: "https://api-info-vic.keno.com.au/v2/games/kds?jurisdiction=VIC",
-  QLD: "https://api-info-qld.keno.com.au/v2/games/kds?jurisdiction=QLD",
-  ACT: "https://api-info-act.keno.com.au/v2/games/kds?jurisdiction=ACT",
-  TAS: "https://api-info-act.keno.com.au/v2/games/kds?jurisdiction=ACT",
-  SA: "https://api-info-act.keno.com.au/v2/games/kds?jurisdiction=ACT",
-  NT: "https://api-info-act.keno.com.au/v2/games/kds?jurisdiction=ACT",
-};
-const HISTORY_URLS = {
-  NSW: "https://api-info-nsw.keno.com.au/v2/info/history?jurisdiction=NSW",
-  VIC: "https://api-info-vic.keno.com.au/v2/info/history?jurisdiction=VIC",
-  QLD: "https://api-info-qld.keno.com.au/v2/info/history?jurisdiction=QLD",
-  ACT: "https://api-info-act.keno.com.au/v2/info/history?jurisdiction=ACT",
-  TAS: "https://api-info-act.keno.com.au/v2/info/history?jurisdiction=ACT",
-  SA: "https://api-info-act.keno.com.au/v2/info/history?jurisdiction=ACT",
-  NT: "https://api-info-act.keno.com.au/v2/info/history?jurisdiction=ACT",
-};
+import { useState, useEffect, useRef } from "react";
+import { KDS_URLS, HISTORY_URLS, number_of_games } from "../global";
 
 const useFetchData = (jurisdiction = "NSW") => {
   const throttle = (func, duration) => {
@@ -30,8 +12,6 @@ const useFetchData = (jurisdiction = "NSW") => {
     };
   };
 
-  const number_of_games = 50;
-
   const [datas, setDatas] = useState([]);
   const [error, setError] = useState(null);
   const [disableError, setDisableError] = useState(false);
@@ -41,7 +21,7 @@ const useFetchData = (jurisdiction = "NSW") => {
     setError(text), 60;
   });
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       const response_lastItem = await fetch(KDS_URLS[jurisdiction]);
       if (!response_lastItem.ok) {
@@ -82,11 +62,9 @@ const useFetchData = (jurisdiction = "NSW") => {
         const day = String(nswDate.getDate()).padStart(2, "0");
 
         console.log("dtas", datas.length);
-        const fetchHistoryUrl = `${
-          HISTORY_URLS[jurisdiction]
-        }&starting_game_number=${
-          currentNumber - number_of_games + 1
-        }&number_of_games=${number_of_games}&date=${year}-${month}-${day}&page_size=${number_of_games}&page_number=1`;
+        const fetchHistoryUrl = `${HISTORY_URLS[jurisdiction]
+          }&starting_game_number=${currentNumber - number_of_games + 1
+          }&number_of_games=${number_of_games}&date=${year}-${month}-${day}&page_size=${number_of_games}&page_number=1`;
 
         console.log("fetchHistoryUrl", fetchHistoryUrl);
 
@@ -100,15 +78,15 @@ const useFetchData = (jurisdiction = "NSW") => {
         const json2 = await history_response.json();
 
         console.log("json2.items?.length", json2.items?.length);
-        if (json2.items?.length === number_of_games) {
-          setDatas(
-            [...json2.items].sort((a, b) => b["game-number"] - a["game-number"])
-          );
-          setDisableError(false);
-          setError(null);
-        } else {
-          throw new Error("History Fetch error");
-        }
+        // if (json2.items?.length === number_of_games) {
+        setDatas(
+          [...json2.items].sort((a, b) => b["game-number"] - a["game-number"])
+        );
+        setDisableError(false);
+        setError(null);
+        // } else {
+        //   throw new Error("History Fetch error");
+        // }
       } else {
         throw new Error("Live Draw Fetch error");
       }
@@ -131,7 +109,7 @@ const useFetchData = (jurisdiction = "NSW") => {
 
       timeoutIdRef.current = setTimeout(fetchData, 1000);
     }
-  }, [jurisdiction, datas, error, disableError]);
+  };
 
   useEffect(() => {
     if (timeoutIdRef.current) {
