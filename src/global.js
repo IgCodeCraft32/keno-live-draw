@@ -10,7 +10,7 @@ export const backgroundFetchOptions = {
   },
   color: "#ff00ff",
   parameters: {
-    delay: 1000,
+    delay: 5000,
   },
 };
 
@@ -93,7 +93,7 @@ export const fetchData = async (jurisdiction) => {
         throw new Error(`HTTP error! status: ${history_response.status}`);
       }
 
-      console.log(`fetchHistoryUrl ${fetchHistoryUrl}`);
+      console.log(`fetchHistoryUrl -2- ${fetchHistoryUrl}`);
       const json2 = await history_response.json();
 
       return { timeoutDuration, datas: [...json2.items].sort(

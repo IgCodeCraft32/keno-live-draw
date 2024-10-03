@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { AppState } from "react-native";
 import { KDS_URLS, HISTORY_URLS, number_of_games } from "../global";
 
 const useFetchData = (jurisdiction = "NSW") => {
@@ -11,6 +12,31 @@ const useFetchData = (jurisdiction = "NSW") => {
       }
     };
   };
+
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [enableFetch, setEnableFetch] = useState(true);
+
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState) => {
+      if (appState.match(/inactive|background/) && nextAppState === "active") {
+        setEnableFetch(true);
+      } else if (nextAppState === "background") {
+        setEnableFetch(false);
+      }
+      setAppState(nextAppState);
+    };
+
+    // Subscribe to app state changes
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
+    return () => {
+      // Cleanup the event listener on unmount
+      subscription.remove();
+    };
+  }, [appState]);
 
   const [datas, setDatas] = useState([]);
   const [error, setError] = useState(null);
@@ -61,10 +87,12 @@ const useFetchData = (jurisdiction = "NSW") => {
         const month = String(nswDate.getMonth() + 1).padStart(2, "0");
         const day = String(nswDate.getDate()).padStart(2, "0");
 
-        console.log("dtas", datas.length);
-        const fetchHistoryUrl = `${HISTORY_URLS[jurisdiction]
-          }&starting_game_number=${currentNumber - number_of_games + 1
-          }&number_of_games=${number_of_games}&date=${year}-${month}-${day}&page_size=${number_of_games}&page_number=1`;
+        console.log("datas", datas.length);
+        const fetchHistoryUrl = `${
+          HISTORY_URLS[jurisdiction]
+        }&starting_game_number=${
+          currentNumber - number_of_games + 1
+        }&number_of_games=${number_of_games}&date=${year}-${month}-${day}&page_size=${number_of_games}&page_number=1`;
 
         console.log("fetchHistoryUrl", fetchHistoryUrl);
 
@@ -92,7 +120,7 @@ const useFetchData = (jurisdiction = "NSW") => {
       }
 
       if (timeoutIdRef.current) {
-        // console.log(timeoutIdRef.current, 1);
+        // console.log("timerRef", timeoutIdRef.current, 1);
         clearTimeout(timeoutIdRef.current);
         timeoutIdRef.current = null;
       }
@@ -102,7 +130,7 @@ const useFetchData = (jurisdiction = "NSW") => {
       if (!disableError) handleError(new Error(error).message);
 
       if (timeoutIdRef.current) {
-        console.log(timeoutIdRef.current, 2);
+        console.log("timerRef", timeoutIdRef.current, 2);
         clearTimeout(timeoutIdRef.current);
         timeoutIdRef.current = null;
       }
@@ -113,7 +141,7 @@ const useFetchData = (jurisdiction = "NSW") => {
 
   useEffect(() => {
     if (timeoutIdRef.current) {
-      console.log(timeoutIdRef.current, 3);
+      console.log("timerRef", timeoutIdRef.current, 3);
       clearTimeout(timeoutIdRef.current);
       timeoutIdRef.current = null;
 
@@ -121,8 +149,8 @@ const useFetchData = (jurisdiction = "NSW") => {
       setError(null);
     }
 
-    fetchData();
-  }, [jurisdiction]);
+    if (enableFetch) fetchData();
+  }, [jurisdiction, enableFetch]);
 
   const cancelModal = () => {
     setError(null);
